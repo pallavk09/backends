@@ -13,14 +13,14 @@ console.log("otpCache created");
 //   console.log("Error " + err);
 // });
 
-module.exports.storeOtpInRedis = (phoneNumber, otp) => {
+module.exports.storeOtpInCache = (phoneNumber, otp) => {
   console.log("Inside storeOtpInRedis");
   // await client.setEx(phoneNumber, 300, otp);
   otpCache.set(phoneNumber, otp);
   console.log("OTP store success");
 };
 
-module.exports.validateOtpFromRedis = (phoneNumber, otp) => {
+module.exports.validateOtpFromCache = (phoneNumber, otp) => {
   console.log("Inside validateOtpFromRedis. Fetching OTP");
   // const storedOtp = await client.get(phoneNumber);
   const cachedOtp = otpCache.get(phoneNumber);

@@ -1,16 +1,10 @@
-// const account = require("../server");
-const twilio = require("twilio");
 const {
-  storeOtpInRedis,
-  validateOtpFromRedis,
+  storeOtpInCache,
+  validateOtpFromCache,
 } = require("../helper/nodecache");
 
-const { checkIfUserExists, createAppwriteUser } = require("../helper/appWrite");
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-const client = twilio(accountSid, authToken);
+const { SendOtpThroughTwilio } = require("../helper/twilio");
+const { GetUsers, createRegistration } = require("../helper/appWrite");
 
 module.exports.TestMethod = (req, res) => {
   res.status(200).json({
@@ -21,20 +15,17 @@ module.exports.TestMethod = (req, res) => {
 
 module.exports.SendOTP = async (req, res) => {
   try {
-    console.log(req.body);
     const otp = Math.floor(100000 + Math.random() * 900000);
     const message = `Your verification code is ${otp}`;
     const { phone } = req.body;
-    storeOtpInRedis(phone, otp);
-    const result = await client.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER, // Your Twilio phone number
-      to: phone,
-    });
-    console.log("OTP sent:", result.sid);
-    res
-      .status(200)
-      .json({ staus: "SUCCESS", message: `OTP sent successfully: ${otp}` });
+    storeOtpInCache(phone, otp);
+    const result = await SendOtpThroughTwilio(phone, message);
+    if (result)
+      res
+        .status(200)
+        .json({ staus: "SUCCESS", message: `OTP sent successfully: ${otp}` });
+    else
+      res.status(500).json({ staus: "FAIL", message: `Failed to create OTP` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ staus: "FAIL", message: error.message });
@@ -44,26 +35,24 @@ module.exports.SendOTP = async (req, res) => {
 module.exports.ValidateOtp = async (req, res) => {
   try {
     const { phone, otp } = req.body;
-    if (validateOtpFromRedis(phone, otp)) {
+    if (validateOtpFromCache(phone, otp)) {
       console.log("OTP validated successfully");
       // Check if the user already exists
-      const existingUser = await checkIfUserExists(phone);
+      const existingUser = await GetUsers(phone);
       if (existingUser) {
         return res
           .status(200)
           .json({ message: "User logged in", userId: existingUser.$id });
       }
 
-      // If not, create a new user
+      // If not, create a new Registration
       try {
-        const newUser = await createAppwriteUser(phone);
+        const newUser = await createRegistration(phone);
         return res
           .status(200)
-          .json({ message: "New user created", userId: newUser.$id });
+          .json({ message: "New registration created", userId: newUser.$id });
       } catch (error) {
-        return res
-          .status(500)
-          .json({ error: "Failed to create user in Appwrite" });
+        return res.status(500).json({ error: "Failed to create registration" });
       }
     } else {
       return res

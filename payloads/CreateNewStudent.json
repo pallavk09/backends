@@ -1,0 +1,31 @@
+{
+  "userId": "66ed6c390012595e90ab",
+  "studentObj": {
+    "id": "1",
+    "personalDetails": {
+      "studentfullname": "Pallav Kumar",
+      "addressline1": "New Delhi Tent House",
+      "addressline2": "Bus Stand, Jail Hata",
+      "addresscity": "Daltonganj",
+      "addressstate": "Jharkhand",
+      "addresspincode": "822101",
+      "studentdob": "13/06/1990",
+      "studentgender": "Male"
+    },
+    "guardianDetails": {
+      "guardianname": "Mukul Vishwakarma",
+      "studentrelation": "Father",
+      "occupation": "Business",
+      "guardianphoneno": "+918580370340",
+      "guardianemailid": "pallavk09@gmail.com"
+    },
+    "academicsDetails": {
+      "class": "CLASS-I",
+      "section": "B",
+      "rollnumber": "12",
+      "housename": "House1",
+      "busnumber": "Bus1"
+    },
+    "newAdmission": false
+  }
+}

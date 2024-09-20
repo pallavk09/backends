@@ -5,10 +5,10 @@ const {
   ValidateOtp,
 } = require("../controller/authController");
 
-// const {
-//   trycheckIfUserExists,
-//   trycreateAppwriteUser,
-// } = require("../helper/appWrite");
+const {
+  trycheckIfUserExists,
+  trycreateAppwriteUser,
+} = require("../helper/appWrite");
 
 const router = express.Router();
 
