@@ -14,6 +14,8 @@ module.exports.SendOtpThroughTwilio = async (phone, message) => {
 
     return result;
   } catch (error) {
-    return null;
+    throw new Error(
+      `Error while sending OTP to user. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };

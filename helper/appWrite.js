@@ -7,6 +7,7 @@ const {
 } = require("../utils/utils");
 
 const { ID, Query } = require("node-appwrite");
+const e = require("express");
 
 const client = new sdk.Client()
   .setEndpoint(process.env.APPWRITE_ENDPOINT) // Your Appwrite endpoint
@@ -35,7 +36,9 @@ module.exports.GetUsers = async (phoneNumber) => {
     const results = await users.list([Query.equal("phone", [phoneNumber])]);
     return results?.users[0];
   } catch (error) {
-    console.log("Error while checking for user: ", error.message);
+    throw new Error(
+      `Error while getting list of users. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };
 
@@ -72,7 +75,9 @@ module.exports.createRegistration = async (phone) => {
       return null;
     }
   } catch (error) {
-    console.error("Error creating registration:", error.message);
+    throw new Error(
+      `Error while creating registration. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };
 
@@ -86,7 +91,7 @@ module.exports.AddNewStudent = async (userId, studentObj) => {
       personalDetails: JSON.stringify(studentObj.personalDetails),
       guardianDetails: JSON.stringify(studentObj.guardianDetails),
       academicsDetails: JSON.stringify(studentObj.academicsDetails),
-      fees: [],
+      fees: studentObj.fees,
       newAdmission: studentObj.newAdmission,
       createdAt,
     };
@@ -98,7 +103,9 @@ module.exports.AddNewStudent = async (userId, studentObj) => {
     console.log("New Student created:", newStudent.$id);
     return ParseStringify(newStudent);
   } catch (error) {
-    console.error("Error creating student:", error.message);
+    throw new Error(
+      `Error while adding new student for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };
 
@@ -110,9 +117,11 @@ module.exports.ListAllStudentsForUser = async (userId) => {
       [Query.equal("userId", [userId])]
     );
     // return studentList?.documents;
-    return FormatListStudentReponse(studentList?.documents);
+    return FormatListStudentReponse(studentList?.documents || []);
   } catch (error) {
-    console.error("Error listing documents:", error.message);
+    throw new Error(
+      `Error while listing students for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };
 
@@ -127,7 +136,7 @@ const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
     );
     return ParseStringify(newDocument);
   } catch (error) {
-    console.error("Error creating user:", error.message);
+    throw new Error(`Error while creating document: ${error.message}`);
   }
 };
 
@@ -140,6 +149,8 @@ const ListAllDocument = async (db_id, collection_id, query) => {
     );
     return ParseStringify(documentList);
   } catch (error) {
-    console.error("Error listing documents:", error.message);
+    throw new Error(
+      `Error while listing all document. DB: ${db_id}. Collection: ${collection_id}, Query: ${query}. Error: ${error.message}. Stack: ${error.stack}`
+    );
   }
 };

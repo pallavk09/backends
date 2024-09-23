@@ -5,6 +5,7 @@ const {
 
 const { SendOtpThroughTwilio } = require("../helper/twilio");
 const { GetUsers, createRegistration } = require("../helper/appWrite");
+const logger = require("../logger/logger");
 
 module.exports.TestMethod = (req, res) => {
   res.status(200).json({
@@ -13,26 +14,26 @@ module.exports.TestMethod = (req, res) => {
   });
 };
 
-module.exports.SendOTP = async (req, res) => {
+module.exports.SendOTP = async (req, res, next) => {
   try {
     const otp = Math.floor(100000 + Math.random() * 900000);
     const message = `Your verification code is ${otp}`;
+    logger.info(`OTP Message created: ${message}`);
     const { phone } = req.body;
     storeOtpInCache(phone, otp);
     const result = await SendOtpThroughTwilio(phone, message);
     if (result)
       res
         .status(200)
-        .json({ staus: "SUCCESS", message: `OTP sent successfully: ${otp}` });
+        .json({ status: "SUCCESS", message: `OTP sent successfully: ${otp}` });
     else
-      res.status(500).json({ staus: "FAIL", message: `Failed to create OTP` });
+      res.status(500).json({ status: "FAIL", message: `Failed to create OTP` });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ staus: "FAIL", message: error.message });
+    next(error);
   }
 };
 
-module.exports.ValidateOtp = async (req, res) => {
+module.exports.ValidateOtp = async (req, res, next) => {
   try {
     const { phone, otp } = req.body;
     if (validateOtpFromCache(phone, otp)) {
@@ -40,19 +41,25 @@ module.exports.ValidateOtp = async (req, res) => {
       // Check if the user already exists
       const existingUser = await GetUsers(phone);
       if (existingUser) {
-        return res
-          .status(200)
-          .json({ message: "User logged in", userId: existingUser.$id });
+        return res.status(200).json({
+          status: "SUCCESS",
+          message: "User logged in",
+          userId: existingUser.$id,
+        });
       }
 
       // If not, create a new Registration
-      try {
-        const newUser = await createRegistration(phone);
+      const newUser = await createRegistration(phone);
+      if (newUser) {
+        return res.status(201).json({
+          status: "SUCCESS",
+          message: "User registered",
+          userId: newUser.$id,
+        });
+      } else {
         return res
-          .status(200)
-          .json({ message: "New registration created", userId: newUser.$id });
-      } catch (error) {
-        return res.status(500).json({ error: "Failed to create registration" });
+          .status(500)
+          .json({ status: "FAIL", message: "Error registering user" });
       }
     } else {
       return res
@@ -60,7 +67,6 @@ module.exports.ValidateOtp = async (req, res) => {
         .json({ status: "FAIL", message: "OTP validation failed." });
     }
   } catch (error) {
-    console.log("Error while validating OTP");
-    res.status(500).json({ status: "FAIL", message: error.message });
+    next(error);
   }
 };

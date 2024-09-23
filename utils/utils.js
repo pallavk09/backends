@@ -3,20 +3,34 @@ module.exports.ParseStringify = (value) => {
 };
 
 module.exports.ExcludeMetaData = (value) => {
-  return Object.fromEntries(
-    Object.entries(value).filter(([key]) => !key.startsWith("$"))
-  );
+  try {
+    return Object.fromEntries(
+      Object.entries(value).filter(([key]) => !key.startsWith("$"))
+    );
+  } catch (error) {
+    throw new Error(error);
+  }
 };
 
 module.exports.FormatListStudentReponse = async (students) => {
-  const formattedResponse = students.map((student) =>
-    this.ExcludeMetaData({
-      ...student,
-      personalDetails: JSON.parse(student.personalDetails),
-      guardianDetails: JSON.parse(student.guardianDetails),
-      academicsDetails: JSON.parse(student.academicsDetails),
-    })
-  );
+  try {
+    const formattedResponse = students.map((student) =>
+      this.ExcludeMetaData({
+        ...student,
+        personalDetails: JSON.parse(student.personalDetails),
+        guardianDetails: JSON.parse(student.guardianDetails),
+        academicsDetails: JSON.parse(student.academicsDetails),
+      })
+    );
 
-  return formattedResponse;
+    return formattedResponse;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+module.exports.CatchAsyncException = (fn) => {
+  return (req, res, next) => {
+    fn(req, res, next).catch((error) => next(error));
+  };
 };

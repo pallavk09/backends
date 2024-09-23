@@ -1,25 +1,33 @@
 const { AddNewStudent, ListAllStudentsForUser } = require("../helper/appWrite");
-const { ExcludeMetaData } = require("../utils/utils");
+const { ExcludeMetaData, CatchAsyncException } = require("../utils/utils");
 
-module.exports.CreateNewStudent = async (req, res) => {
+module.exports.CreateNewStudent = async (req, res, next) => {
   try {
     const { userId, studentObj } = req.body;
     const newStudent = await AddNewStudent(userId, studentObj);
     if (newStudent) {
       return res.status(200).json({
+        status: "SUCCESS",
         message: "New student created",
         newStudent: ExcludeMetaData(newStudent),
       });
     } else {
-      return res.status(500).json({ error: "Failed to create student" });
+      return res
+        .status(500)
+        .json({ status: "FAIL", message: "Failed to create student" });
     }
   } catch (error) {
-    console.log("Error while creating new student");
-    res.status(500).json({ status: "FAIL", message: error.message });
+    const err = new Error(
+      `Error while creating new student. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
   }
 };
 
-module.exports.ListStudents = async (req, res) => {
+module.exports.ListStudents = async (req, res, next) => {
   try {
     const { userId } = req.body;
     const studentList = await ListAllStudentsForUser(userId);
@@ -29,11 +37,16 @@ module.exports.ListStudents = async (req, res) => {
         result: studentList,
       });
     } else {
-      return res.status(500).json({ error: "Failed to fetch students" });
+      return res.status(404).json({ status: "SUCCESS", result: [] });
     }
   } catch (error) {
-    console.log("Error while getting students");
-    res.status(500).json({ status: "FAIL", message: error.message });
+    const err = new Error(
+      `Error while listing students. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
   }
 };
 
@@ -41,7 +54,12 @@ module.exports.UpdateStudent = async (req, res) => {
   try {
     const { userId, studentId } = req.body;
   } catch (error) {
-    console.log("Error while updating student");
-    res.status(500).json({ status: "FAIL", message: error.message });
+    const err = new Error(
+      `Error while updating students. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
   }
 };
