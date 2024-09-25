@@ -3,8 +3,9 @@ const { ExcludeMetaData, CatchAsyncException } = require("../utils/utils");
 
 module.exports.CreateNewStudent = async (req, res, next) => {
   try {
-    const { userId, studentObj } = req.body;
-    const newStudent = await AddNewStudent(userId, studentObj);
+    const { userId, phone, studentObj } = req.body;
+    console.log("CreateNewStudent: userId -------------> ", userId);
+    const newStudent = await AddNewStudent(userId, phone, studentObj);
     if (newStudent) {
       return res.status(200).json({
         status: "SUCCESS",
@@ -32,6 +33,9 @@ module.exports.ListStudents = async (req, res, next) => {
     const { userId } = req.body;
     const studentList = await ListAllStudentsForUser(userId);
     if (studentList) {
+      //Update Siblings under users collection for this userId
+
+      //Send respone to client
       return res.status(200).json({
         status: "SUCCESS",
         result: studentList,

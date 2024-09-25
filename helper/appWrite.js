@@ -7,7 +7,7 @@ const {
 } = require("../utils/utils");
 
 const { ID, Query } = require("node-appwrite");
-const e = require("express");
+// const e = require("express");
 
 const client = new sdk.Client()
   .setEndpoint(process.env.APPWRITE_ENDPOINT) // Your Appwrite endpoint
@@ -69,7 +69,6 @@ module.exports.createRegistration = async (phone) => {
         process.env.APPWRITE_DB_ID,
         process.env.APPWRITE_USERS_COLLECTION
       );
-      console.log("New Registration created:", newUser.$id);
       return ParseStringify(newUser);
     } else {
       return null;
@@ -81,12 +80,13 @@ module.exports.createRegistration = async (phone) => {
   }
 };
 
-module.exports.AddNewStudent = async (userId, studentObj) => {
+module.exports.AddNewStudent = async (userId, phone, studentObj) => {
   try {
     const date = moment();
     const createdAt = date.format("D/MM/YYYY");
     const newStudentObj = {
       userId,
+      phone,
       studentId: studentObj.id,
       personalDetails: JSON.stringify(studentObj.personalDetails),
       guardianDetails: JSON.stringify(studentObj.guardianDetails),
@@ -117,10 +117,27 @@ module.exports.ListAllStudentsForUser = async (userId) => {
       [Query.equal("userId", [userId])]
     );
     // return studentList?.documents;
+
     return FormatListStudentReponse(studentList?.documents || []);
   } catch (error) {
     throw new Error(
       `Error while listing students for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+module.exports.GetRegisteredUser = async (userId) => {
+  try {
+    const studentList = await ListAllDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_USERS_COLLECTION,
+      [Query.equal("userId", [userId])]
+    );
+
+    return studentList?.documents || [];
+  } catch (error) {
+    throw new Error(
+      `Error while listing RegisteredUser: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
     );
   }
 };
@@ -147,6 +164,7 @@ const ListAllDocument = async (db_id, collection_id, query) => {
       collection_id,
       query
     );
+
     return ParseStringify(documentList);
   } catch (error) {
     throw new Error(
