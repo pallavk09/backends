@@ -42,7 +42,7 @@ module.exports.SendOTP = async (req, res, next) => {
 
 module.exports.ValidateOtp = async (req, res, next) => {
   try {
-    const { phone, otp } = req.body;
+    const { phone, otp, type } = req.body;
     if (validateOtpFromCache(phone, otp)) {
       console.log("OTP validated successfully");
       //Create JWT Token
@@ -69,7 +69,7 @@ module.exports.ValidateOtp = async (req, res, next) => {
       }
 
       // If not, create a new Registration
-      const newUser = await createRegistration(phone);
+      const newUser = await createRegistration(phone, type);
       if (newUser) {
         console.log("OTP Valid. New user. $id: ", newUser.$id);
         console.log("OTP Valid. New user. userId: ", newUser.userId);

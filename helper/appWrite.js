@@ -42,7 +42,7 @@ module.exports.GetUsers = async (phoneNumber) => {
   }
 };
 
-module.exports.createRegistration = async (phone) => {
+module.exports.createRegistration = async (phone, type) => {
   try {
     const userId = ID.unique();
     const newRegistration = await users.create(
@@ -53,21 +53,46 @@ module.exports.createRegistration = async (phone) => {
       undefined
     );
     if (newRegistration) {
+      if (type === "STUDENT") {
+        const date = moment();
+        const createdAt = date.format("D/MM/YYYY");
+        const newUserObj = {
+          userId,
+          phone,
+          role: "student",
+          otpVerified: true,
+          siblings: [],
+          createdAt,
+        };
+        //Creating new document under User collection
+        const newUser = await AddNewDocument(
+          newUserObj,
+          process.env.APPWRITE_DB_ID,
+          process.env.APPWRITE_USERS_COLLECTION
+        );
+        return ParseStringify(newUser);
+      } else {
+        return null;
+      }
+    } else if (type === "NEWADMISSION") {
       const date = moment();
       const createdAt = date.format("D/MM/YYYY");
       const newUserObj = {
         userId,
         phone,
-        role: "student",
-        otpVerified: true,
-        siblings: [],
+        emailId: "",
+        applicationId: "",
+        submissionDate: "",
+        status: "",
+        statusUpdatedOn: "",
+        role: "newadmission",
         createdAt,
       };
-      //Creating new document under User collection
+      //Creating new document under new-admission collection
       const newUser = await AddNewDocument(
         newUserObj,
         process.env.APPWRITE_DB_ID,
-        process.env.APPWRITE_USERS_COLLECTION
+        process.env.APPWRITE_NEW_ADMISSION_COLLECTION
       );
       return ParseStringify(newUser);
     } else {
