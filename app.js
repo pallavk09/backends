@@ -2,12 +2,23 @@ require("dotenv").config({ path: `.env.local`, override: true });
 const express = require("express");
 const morgan = require("morgan");
 const logger = require("./logger/logger");
+// const cors = require("cors");
 
 const authRouter = require("./routes/authRoutes");
 const studentRouter = require("./routes/studentRoutes");
 const feeRouter = require("./routes/feeRoutes");
+const newAdmissionRouter = require("./routes/newAdmissionRoutes");
 
 const app = express();
+
+// Enable CORS for all routes
+// app.use(
+//   cors({
+//     origin: "http://localhost:3000", // Allow only your React app
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow specific methods
+//     allowedHeaders: ["Content-Type"], // Allow specific headers
+//   })
+// );
 
 process.on("uncaughtException", function (err) {
   console.log(err);
@@ -27,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/student", studentRouter);
 app.use("/api/v1/fees", feeRouter);
+app.use("/api/v1/newadmission", newAdmissionRouter);
 
 //Handling unhandled routes
 app.all("*", (req, res, next) => {

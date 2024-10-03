@@ -16,6 +16,7 @@ const client = new sdk.Client()
 
 let users = new sdk.Users(client);
 let database = new sdk.Databases(client);
+let storage = new sdk.Storage(client);
 
 // module.exports.trycheckIfUserExists = async (req, res) => {
 //   const result = await this.checkIfUserExists("+918580370340");
@@ -43,6 +44,8 @@ module.exports.GetUsers = async (phoneNumber) => {
 };
 
 module.exports.createRegistration = async (phone, type) => {
+  console.log("Inside createRegistration");
+  console.log("Phone and type received as :", phone, type);
   try {
     const userId = ID.unique();
     const newRegistration = await users.create(
@@ -53,7 +56,9 @@ module.exports.createRegistration = async (phone, type) => {
       undefined
     );
     if (newRegistration) {
+      console.log("New Registration created");
       if (type === "STUDENT") {
+        console.log("Type is STUDENT");
         const date = moment();
         const createdAt = date.format("D/MM/YYYY");
         const newUserObj = {
@@ -65,38 +70,50 @@ module.exports.createRegistration = async (phone, type) => {
           createdAt,
         };
         //Creating new document under User collection
+        console.log("Adding New Document for STUDENT");
         const newUser = await AddNewDocument(
           newUserObj,
           process.env.APPWRITE_DB_ID,
           process.env.APPWRITE_USERS_COLLECTION
         );
         return ParseStringify(newUser);
+      } else if (type === "NEWADMISSION") {
+        return newRegistration;
+        // const date = moment();
+        // console.log("Type is NEW ADMISSION");
+        // const createdAt = date.format("D/MM/YYYY");
+        // const newUserObj = {
+        //   fileUrl: "",
+        //   userId,
+        //   phone,
+        //   emailId: "",
+        //   applicationId: "",
+        //   applicationData: "",
+        //   submissionDate: "",
+        //   status: "",
+        //   statusUpdatedOn: "",
+        //   role: "newadmission",
+        //   createdAt,
+        // };
+        // //Creating new document under new-admission collection
+        // console.log("Adding New Document for NEW ADMISSION");
+        // const newUser = await AddNewDocument(
+        //   newUserObj,
+        //   process.env.APPWRITE_DB_ID,
+        //   process.env.APPWRITE_NEW_ADMISSION_COLLECTION
+        // );
+        // return ParseStringify(newUser);
       } else {
-        return null;
+        console.log(
+          `Error: Phone: ${phone}. Type: ${type}. ${error.message}. Stack: ${error.stack}`
+        );
+        throw new Error(`Registration type unknown`);
       }
-    } else if (type === "NEWADMISSION") {
-      const date = moment();
-      const createdAt = date.format("D/MM/YYYY");
-      const newUserObj = {
-        userId,
-        phone,
-        emailId: "",
-        applicationId: "",
-        submissionDate: "",
-        status: "",
-        statusUpdatedOn: "",
-        role: "newadmission",
-        createdAt,
-      };
-      //Creating new document under new-admission collection
-      const newUser = await AddNewDocument(
-        newUserObj,
-        process.env.APPWRITE_DB_ID,
-        process.env.APPWRITE_NEW_ADMISSION_COLLECTION
-      );
-      return ParseStringify(newUser);
     } else {
-      return null;
+      console.log(
+        `Registration failed. Error: Phone: ${phone}. Type: ${type}. ${error.message}. Stack: ${error.stack}`
+      );
+      throw new Error(`Registration failed.`);
     }
   } catch (error) {
     throw new Error(
@@ -113,6 +130,7 @@ module.exports.AddNewStudent = async (userId, phone, studentObj) => {
       userId,
       phone,
       studentId: studentObj.id,
+      photoUrl: studentObj.photoUrl,
       personalDetails: JSON.stringify(studentObj.personalDetails),
       guardianDetails: JSON.stringify(studentObj.guardianDetails),
       academicsDetails: JSON.stringify(studentObj.academicsDetails),
@@ -131,6 +149,29 @@ module.exports.AddNewStudent = async (userId, phone, studentObj) => {
     throw new Error(
       `Error while adding new student for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
     );
+  }
+};
+
+module.exports.UploadFileToStorage = async (
+  db_id,
+  collection_id,
+  bucket_id,
+  photoUrl,
+  document_id
+) => {
+  try {
+    const uploadImage = await AddFileToStorage(bucket_id, photoUrl);
+    if (uploadImage) {
+      const updatedDocument = await UpdateDocument(
+        db_id,
+        collection_id,
+        document_id
+      );
+    }
+
+    return updatedDocument;
+  } catch (error) {
+    error.message;
   }
 };
 
@@ -167,8 +208,68 @@ module.exports.GetRegisteredUser = async (userId) => {
   }
 };
 
+module.exports.AddNewApplication = async (applicationObj) => {
+  try {
+    console.log(
+      "========== AddNewApplication. Started ========================"
+    );
+    const date = moment();
+    const currentDate = date.format("D/MM/YYYY");
+
+    const newApplicationObj = {
+      photoUrl: applicationObj?.photoUrl,
+      userId: applicationObj.userId,
+      phone: applicationObj.phone,
+      emailId: applicationObj.emailId,
+      applicationId: applicationObj.applicationId,
+      currentStatus: applicationObj.status,
+      role: applicationObj.role,
+      submissionDate: currentDate,
+      createdAt: currentDate,
+      statusUpdatedOn: "",
+      applicationData: applicationObj.applicationData,
+      submissionStatus: applicationObj.submissionStatus,
+      paymentStatus: applicationObj.paymentStatus,
+      transactionId: "",
+    };
+
+    const newApplicationResponse = await AddNewDocument(
+      newApplicationObj,
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_NEW_ADMISSION_COLLECTION
+    );
+    console.log("New Application created:", newApplicationResponse.$id);
+
+    console.log("========== AddNewApplication. Ended ========================");
+    return newApplicationResponse;
+  } catch (error) {
+    throw new Error(
+      `Error while adding new application for userId: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+module.exports.ListAllApplicationsForUser = async (userId) => {
+  try {
+    const applicationList = await ListAllDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_NEW_ADMISSION_COLLECTION,
+      [Query.equal("userId", [userId])]
+    );
+    console.log("Applications listed");
+    return applicationList?.documents || [];
+  } catch (error) {
+    throw new Error(
+      `Error while listing applications for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
   const documentId = ID.unique();
+  console.log("========== AddNewDocument. Started ========================");
+  console.log("Payload received: ");
+  console.log(newDocumentObj);
   try {
     const newDocument = await database.createDocument(
       db_id,
@@ -176,8 +277,10 @@ const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
       documentId,
       newDocumentObj
     );
-    return ParseStringify(newDocument);
+    console.log("========== AddNewDocument. Created ========================");
+    return newDocument;
   } catch (error) {
+    console.log("Error while adding new document: ", error.message);
     throw new Error(`Error while creating document: ${error.message}`);
   }
 };
@@ -194,6 +297,40 @@ const ListAllDocument = async (db_id, collection_id, query) => {
   } catch (error) {
     throw new Error(
       `Error while listing all document. DB: ${db_id}. Collection: ${collection_id}, Query: ${query}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+const AddFileToStorage = async (bucket_id, file) => {
+  try {
+    const Id = ID.unique();
+    const result = await storage.createFile(bucket_id, Id, file);
+    if (result) {
+      const imageUrl = result.$id; // Get the file ID or URL
+      return imageUrl;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    throw new Error(
+      `Error while uploading to storage. DB: ${db_id}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+const UpdateDocument = async (db_id, collection_id, document_id, updateObj) => {
+  try {
+    const updatedDocument = await database.updateDocument(
+      db_id,
+      collection_id,
+      document_id,
+      updateObj
+    );
+    console.log("Document updated successfully");
+    console.log(updatedDocument);
+  } catch (error) {
+    throw new Error(
+      `Error while updating document. COLLECTION ID: ${collection_id}, updateObj: ${updateObj}. Error: ${error.message}. Stack: ${error.stack}`
     );
   }
 };

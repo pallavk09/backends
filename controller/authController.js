@@ -28,8 +28,11 @@ module.exports.SendOTP = async (req, res, next) => {
     logger.info(`OTP Message created: ${message}`);
     const { phone } = req.body;
     storeOtpInCache(phone, otp);
-    const result = await SendOtpThroughTwilio(phone, message);
-    if (result)
+    //TO BE UNCOMMENTED: START
+    // const result = await SendOtpThroughTwilio(phone, message);
+    // if (result)
+    //TO BE UNCOMMENTED: END
+    if (true)
       res
         .status(200)
         .json({ status: "SUCCESS", message: `OTP sent successfully: ${otp}` });
@@ -45,21 +48,22 @@ module.exports.ValidateOtp = async (req, res, next) => {
     const { phone, otp, type } = req.body;
     if (validateOtpFromCache(phone, otp)) {
       console.log("OTP validated successfully");
-      //Create JWT Token
-      const token = jwt.sign({ phone }, process.env.JWT_SECRET, {
-        expiresIn: 3600,
-      });
-      console.log("Printing Token");
-      console.log(token);
+
+      // console.log("Printing Token");
       // Check if the user already exists
       const existingUser = await GetUsers(phone);
       if (existingUser) {
         console.log("OTP Valid. Existing user: ", existingUser.$id);
-        res.cookie("token", token, {
-          httpOnly: true,
-          secure: true,
-          maxAge: 3600000,
-        });
+
+        //Create JWT Token
+        const token = jwt.sign(
+          { phone: phone, userId: existingUser.$id },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "2h",
+          }
+        );
+
         return res.status(200).json({
           status: "SUCCESS",
           message: "User logged in",
@@ -70,19 +74,29 @@ module.exports.ValidateOtp = async (req, res, next) => {
 
       // If not, create a new Registration
       const newUser = await createRegistration(phone, type);
+
       if (newUser) {
-        console.log("OTP Valid. New user. $id: ", newUser.$id);
-        console.log("OTP Valid. New user. userId: ", newUser.userId);
-        res.cookie("token", token, {
-          httpOnly: true,
-          secure: true,
-          maxAge: 3600000,
-        });
+        const _userId =
+          type === "STUDENT"
+            ? newUser.userId
+            : type === "NEWADMISSION"
+            ? newUser.$id
+            : "";
+
+        console.log("New Registration created. _userId: ", _userId);
+        //Create JWT Token
+        const token = jwt.sign(
+          { phone: phone, userId: _userId },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "2h",
+          }
+        );
 
         return res.status(201).json({
           status: "SUCCESS",
           message: "User registered",
-          userId: newUser.userId,
+          userId: _userId,
           token: token,
         });
       } else {
@@ -96,6 +110,7 @@ module.exports.ValidateOtp = async (req, res, next) => {
         .json({ status: "FAIL", message: "OTP validation failed." });
     }
   } catch (error) {
+    console.log("Error validating OTP: ", error.message);
     next(error);
   }
 };

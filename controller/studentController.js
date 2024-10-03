@@ -1,4 +1,8 @@
-const { AddNewStudent, ListAllStudentsForUser } = require("../helper/appWrite");
+const {
+  AddNewStudent,
+  ListAllStudentsForUser,
+  UploadProfilePhoto,
+} = require("../helper/appWrite");
 const { ExcludeMetaData, CatchAsyncException } = require("../utils/utils");
 
 module.exports.CreateNewStudent = async (req, res, next) => {
@@ -54,7 +58,7 @@ module.exports.ListStudents = async (req, res, next) => {
   }
 };
 
-module.exports.UpdateStudent = async (req, res) => {
+module.exports.UpdateStudent = async (req, res, next) => {
   try {
     const { userId, studentId } = req.body;
   } catch (error) {
