@@ -152,6 +152,45 @@ module.exports.AddNewStudent = async (userId, phone, studentObj) => {
   }
 };
 
+module.exports.UpdateExistingStudent = async (
+  userId,
+  phone,
+  documentId,
+  studentObj
+) => {
+  try {
+    const date = moment();
+    const updatedAt = date.format("D/MM/YYYY");
+    const updatedStudentObj = {
+      userId,
+      phone,
+      studentId: studentObj.id,
+      photoUrl: studentObj.photoUrl,
+      personalDetails: JSON.stringify(studentObj.personalDetails),
+      guardianDetails: JSON.stringify(studentObj.guardianDetails),
+      academicsDetails: JSON.stringify(studentObj.academicsDetails),
+      fees: studentObj.fees,
+      newAdmission: studentObj.newAdmission,
+      updatedAt,
+    };
+    const updatedStudent = await UpdateDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_STUDENTS_COLLECTION,
+      documentId,
+      updatedStudentObj
+    );
+    console.log(
+      "Inside UpdateExistingStudent method returning updated student"
+    );
+    console.log(updatedStudent);
+    return ParseStringify(updatedStudent);
+  } catch (error) {
+    throw new Error(
+      `Error while updating student for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 module.exports.UploadFileToStorage = async (
   db_id,
   collection_id,
@@ -328,6 +367,7 @@ const UpdateDocument = async (db_id, collection_id, document_id, updateObj) => {
     );
     console.log("Document updated successfully");
     console.log(updatedDocument);
+    return updatedDocument;
   } catch (error) {
     throw new Error(
       `Error while updating document. COLLECTION ID: ${collection_id}, updateObj: ${updateObj}. Error: ${error.message}. Stack: ${error.stack}`

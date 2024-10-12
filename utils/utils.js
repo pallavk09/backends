@@ -14,14 +14,22 @@ module.exports.ExcludeMetaData = (value) => {
 
 module.exports.FormatListStudentReponse = async (students) => {
   try {
-    const formattedResponse = students.map((student) =>
-      this.ExcludeMetaData({
+    const formattedResponse = students.map((student) => {
+      return {
         ...student,
         personalDetails: JSON.parse(student.personalDetails),
         guardianDetails: JSON.parse(student.guardianDetails),
         academicsDetails: JSON.parse(student.academicsDetails),
-      })
-    );
+      };
+    });
+    // const formattedResponse = students.map((student) =>
+    //   this.ExcludeMetaData({
+    //     ...student,
+    //     personalDetails: JSON.parse(student.personalDetails),
+    //     guardianDetails: JSON.parse(student.guardianDetails),
+    //     academicsDetails: JSON.parse(student.academicsDetails),
+    //   })
+    // );
 
     return formattedResponse;
   } catch (error) {
