@@ -304,6 +304,22 @@ module.exports.ListAllApplicationsForUser = async (userId) => {
   }
 };
 
+module.exports.ListFeesDataForUser = async (userId) => {
+  try {
+    const studentList = await ListAllDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_FEES_COLLECTION,
+      [Query.equal("userId", [userId])]
+    );
+
+    return studentList?.documents || [];
+  } catch (error) {
+    throw new Error(
+      `Error while listing students for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
   const documentId = ID.unique();
   console.log("========== AddNewDocument. Started ========================");

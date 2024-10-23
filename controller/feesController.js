@@ -1,6 +1,31 @@
+const { ListFeesDataForUser } = require("../helper/appWrite");
 const { Pay, CheckStatus } = require("../helper/phonePe");
 const { CatchAsyncException } = require("../utils/utils");
 const axios = require("axios");
+
+module.exports.ListFeesData = async (req, res, next) => {
+  try {
+    const { userId } = req.body;
+    const feesData = await ListFeesDataForUser(userId);
+    if (feesData) {
+      //Send respone to client
+      return res.status(200).json({
+        status: "SUCCESS",
+        result: feesData,
+      });
+    } else {
+      return res.status(404).json({ status: "SUCCESS", result: [] });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Error while fetching fees data. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
 
 module.exports.MakePayment = CatchAsyncException(async (req, res) => {
   const { userId, transactionId, phone, amount } = req.body;
