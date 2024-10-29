@@ -261,7 +261,7 @@ module.exports.AddNewApplication = async (applicationObj) => {
       phone: applicationObj.phone,
       emailId: applicationObj.emailId,
       applicationId: applicationObj.applicationId,
-      currentStatus: applicationObj.status,
+      currentStatus: applicationObj.currentStatus,
       role: applicationObj.role,
       submissionDate: currentDate,
       createdAt: currentDate,
@@ -289,11 +289,12 @@ module.exports.AddNewApplication = async (applicationObj) => {
 };
 
 module.exports.ListAllApplicationsForUser = async (userId) => {
+  let query = userId ? [Query.equal("userId", [userId])] : null;
   try {
     const applicationList = await ListAllDocument(
       process.env.APPWRITE_DB_ID,
       process.env.APPWRITE_NEW_ADMISSION_COLLECTION,
-      [Query.equal("userId", [userId])]
+      query
     );
     console.log("Applications listed");
     return applicationList?.documents || [];
@@ -320,6 +321,61 @@ module.exports.ListFeesDataForUser = async (userId) => {
   }
 };
 
+module.exports.UpdateApplicationStatus = async (documentId, currentStatus) => {
+  try {
+    const date = moment();
+    const statusUpdatedOn = date.format("D/MM/YYYY");
+    const updatedStatusObj = {
+      currentStatus,
+      statusUpdatedOn,
+    };
+    const updatedApplication = await UpdateDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_NEW_ADMISSION_COLLECTION,
+      documentId,
+      updatedStatusObj
+    );
+    console.log("Inside UpdateStatus method returning updated application");
+    console.log(updatedApplication);
+    return ParseStringify(updatedApplication);
+  } catch (error) {
+    throw new Error(
+      `Error while updating application. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+module.exports.ScheduleUpdateApplicationStatus = async (
+  documentId,
+  interview,
+  currentStatus
+) => {
+  try {
+    const date = moment();
+    const statusUpdatedOn = date.format("D/MM/YYYY");
+    const updatedStatusObj = {
+      currentStatus,
+      interview,
+      statusUpdatedOn,
+    };
+    const updatedApplication = await UpdateDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_NEW_ADMISSION_COLLECTION,
+      documentId,
+      updatedStatusObj
+    );
+    console.log(
+      "Inside ScheduleUpdateApplicationStatus method returning updated application"
+    );
+    console.log(updatedApplication);
+    return ParseStringify(updatedApplication);
+  } catch (error) {
+    throw new Error(
+      `Error while scheduling and updating application. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
   const documentId = ID.unique();
   console.log("========== AddNewDocument. Started ========================");
@@ -342,11 +398,12 @@ const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
 
 const ListAllDocument = async (db_id, collection_id, query) => {
   try {
-    const documentList = await database.listDocuments(
-      db_id,
-      collection_id,
-      query
-    );
+    let documentList;
+    if (query) {
+      documentList = await database.listDocuments(db_id, collection_id, query);
+    } else {
+      documentList = await database.listDocuments(db_id, collection_id);
+    }
 
     return ParseStringify(documentList);
   } catch (error) {
