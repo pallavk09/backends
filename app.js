@@ -34,6 +34,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get("/", (req, res) => res.send("Express on Vercel"));
 //Mouting Routers
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/student", studentRouter);
