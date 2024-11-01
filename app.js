@@ -16,6 +16,7 @@ app.use(
   cors({
     origin: "http://localhost:3000", // Allow only your React app
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow specific methods
+    credentials: true,
     // allowedHeaders: ["Content-Type"], // Allow specific headers
   })
 );
