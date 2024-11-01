@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon server.js",
     "prod": "node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "",
+    "vercel-build": "echo hello"
   },
   "author": "Pallavk09",
   "license": "ISC",

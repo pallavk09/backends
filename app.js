@@ -1,7 +1,7 @@
 require("dotenv").config({ path: `.env.local`, override: true });
 const express = require("express");
 const morgan = require("morgan");
-const logger = require("./logger/logger");
+// const logger = require("./logger/logger");
 // const cors = require("cors");
 
 const authRouter = require("./routes/authRoutes");
@@ -26,13 +26,15 @@ process.on("uncaughtException", function (err) {
 
 //Middlewares
 // app.use(morgan("dev"));
-app.use(
-  morgan("combined", {
-    stream: { write: (message) => logger.http(message.trim()) },
-  })
-);
+// app.use(
+//   morgan("combined", {
+//     stream: { write: (message) => logger.http(message.trim()) },
+//   })
+// );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get("/", (req, res) => res.send("Express on Vercel"));
 
 //Mouting Routers
 app.use("/api/v1/auth", authRouter);

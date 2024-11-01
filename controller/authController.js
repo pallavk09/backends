@@ -11,7 +11,7 @@ const {
   createRegistration,
   GetRegisteredUser,
 } = require("../helper/appWrite");
-const logger = require("../logger/logger");
+// const logger = require("../logger/logger");
 const { ExcludeMetaData } = require("../utils/utils");
 
 module.exports.TestMethod = (req, res) => {
@@ -25,7 +25,7 @@ module.exports.SendOTP = async (req, res, next) => {
   try {
     const otp = Math.floor(100000 + Math.random() * 900000);
     const message = `Your verification code is ${otp}`;
-    logger.info(`OTP Message created: ${message}`);
+    // logger.info(`OTP Message created: ${message}`);
     const { phone } = req.body;
     storeOtpInCache(phone, otp);
     //TO BE UNCOMMENTED: START
