@@ -306,17 +306,18 @@ module.exports.ListAllApplicationsForUser = async (userId) => {
 };
 
 module.exports.ListFeesDataForUser = async (userId) => {
+  let query = userId ? [Query.equal("userId", [userId])] : null;
   try {
-    const studentList = await ListAllDocument(
+    const feeDataList = await ListAllDocument(
       process.env.APPWRITE_DB_ID,
       process.env.APPWRITE_FEES_COLLECTION,
-      [Query.equal("userId", [userId])]
+      query
     );
 
-    return studentList?.documents || [];
+    return feeDataList?.documents || [];
   } catch (error) {
     throw new Error(
-      `Error while listing students for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
+      `Error while listing Fees data for user: ${userId}. Error: ${error.message}. Stack: ${error.stack}`
     );
   }
 };

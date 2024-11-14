@@ -27,6 +27,29 @@ module.exports.ListFeesData = async (req, res, next) => {
   }
 };
 
+module.exports.ListAllFeesData = async (req, res, next) => {
+  try {
+    const feesData = await ListFeesDataForUser(null);
+    if (feesData) {
+      //Send respone to client
+      return res.status(200).json({
+        status: "SUCCESS",
+        result: feesData,
+      });
+    } else {
+      return res.status(404).json({ status: "SUCCESS", result: [] });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Error while fetching fees data. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
 module.exports.MakePayment = CatchAsyncException(async (req, res) => {
   const { userId, transactionId, phone, amount } = req.body;
   const amount_paise = amount * 100;
