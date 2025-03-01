@@ -346,6 +346,42 @@ module.exports.UpdateApplicationStatus = async (documentId, currentStatus) => {
   }
 };
 
+module.exports.UpdateApplicationData = async (
+  documentId,
+  applicationData,
+  photoUrl
+) => {
+  try {
+    const date = moment();
+    const statusUpdatedOn = date.format("D/MM/YYYY");
+    const updatedStatusObj = photoUrl
+      ? {
+          applicationData,
+          photoUrl,
+          statusUpdatedOn,
+        }
+      : {
+          applicationData,
+          statusUpdatedOn,
+        };
+    const updatedApplication = await UpdateDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_NEW_ADMISSION_COLLECTION,
+      documentId,
+      updatedStatusObj
+    );
+    console.log(
+      "Inside UpdateApplicationData method returning updated application"
+    );
+    console.log(updatedApplication);
+    return ParseStringify(updatedApplication);
+  } catch (error) {
+    throw new Error(
+      `Error while updating application data. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 module.exports.ScheduleUpdateApplicationStatus = async (
   documentId,
   interview,
@@ -377,27 +413,27 @@ module.exports.ScheduleUpdateApplicationStatus = async (
   }
 };
 
-const AddNewDocument = async (newDocumentObj, db_id, collection_id) => {
-  const documentId = ID.unique();
-  console.log("========== AddNewDocument. Started ========================");
-  console.log("Payload received: ");
-  console.log(newDocumentObj);
+module.exports.AddNewDocument = async (
+  newDocumentObj,
+  db_id,
+  collection_id
+) => {
+  const { id, ...otherFields } = newDocumentObj;
+  const documentId = id;
   try {
     const newDocument = await database.createDocument(
       db_id,
       collection_id,
       documentId,
-      newDocumentObj
+      otherFields
     );
-    console.log("========== AddNewDocument. Created ========================");
     return newDocument;
   } catch (error) {
-    console.log("Error while adding new document: ", error.message);
     throw new Error(`Error while creating document: ${error.message}`);
   }
 };
 
-const ListAllDocument = async (db_id, collection_id, query) => {
+module.exports.ListAllDocument = async (db_id, collection_id, query) => {
   try {
     let documentList;
     if (query) {
@@ -431,7 +467,12 @@ const AddFileToStorage = async (bucket_id, file) => {
   }
 };
 
-const UpdateDocument = async (db_id, collection_id, document_id, updateObj) => {
+module.exports.UpdateDocument = async (
+  db_id,
+  collection_id,
+  document_id,
+  updateObj
+) => {
   try {
     const updatedDocument = await database.updateDocument(
       db_id,
@@ -445,6 +486,52 @@ const UpdateDocument = async (db_id, collection_id, document_id, updateObj) => {
   } catch (error) {
     throw new Error(
       `Error while updating document. COLLECTION ID: ${collection_id}, updateObj: ${updateObj}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
+module.exports.AddMultipleDocuments = async (
+  newDocuments,
+  updated_on,
+  updated_by,
+  db_id,
+  collection_id
+) => {
+  try {
+    const createPromises = newDocuments.map((item) => {
+      const { id, ...otherFields } = item;
+      const item2 = { ...otherFields, updated_on, updated_by };
+      const documentId = id;
+      return database.createDocument(db_id, collection_id, documentId, item2);
+    });
+    const addedDocuments = await Promise.all(createPromises);
+    return addedDocuments;
+  } catch (error) {
+    throw new Error(
+      `Error while creating multiple documents: ${error.message}`
+    );
+  }
+};
+
+module.exports.UpdateMultipleDocuments = async (
+  updateObjs,
+  updated_on,
+  updated_by,
+  db_id,
+  collection_id
+) => {
+  try {
+    const createPromises = updateObjs.map((item) => {
+      const { id, ...otherFields } = item;
+      const documentId = id;
+      const item2 = { ...otherFields, updated_on, updated_by };
+      return database.updateDocument(db_id, collection_id, documentId, item2);
+    });
+    const updatedDocuments = await Promise.all(createPromises);
+    return updatedDocuments;
+  } catch (error) {
+    throw new Error(
+      `Error while updating document. COLLECTION ID: ${collection_id}. Error: ${error.message}. Stack: ${error.stack}`
     );
   }
 };

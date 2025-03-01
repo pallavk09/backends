@@ -3,6 +3,7 @@ const {
   ListAllApplicationsForUser,
   UpdateApplicationStatus,
   ScheduleUpdateApplicationStatus,
+  UpdateApplicationData,
 } = require("../helper/appWrite");
 
 module.exports.CreateNewApplication = async (req, res, next) => {
@@ -160,6 +161,44 @@ module.exports.ScheduleInterview = async (req, res, next) => {
   } catch (error) {
     const err = new Error(
       `Error while scheduling interview and updating application status. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
+module.exports.UpdateApplicationData = async (req, res, next) => {
+  try {
+    const { documentId, applicationData, photoUrl } = req.body;
+    console.log(
+      "UpdateApplicationData: applicationData -------------> ",
+      applicationData
+    );
+    const updatedApplication = await UpdateApplicationData(
+      documentId,
+      applicationData,
+      photoUrl
+    );
+    if (updatedApplication) {
+      console.log("Application Data updated successfully");
+      console.log(updatedApplication);
+
+      return res.status(200).json({
+        status: "SUCCESS",
+        message: "Application status updated.",
+        updatedApplication: updatedApplication,
+      });
+    } else {
+      return res.status(500).json({
+        status: "FAIL",
+        message: "Failed to update application data",
+      });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Error while updating application data. Error: ${error.message}`
     );
     err.status = "FAIL";
     err.statusCode = 500;

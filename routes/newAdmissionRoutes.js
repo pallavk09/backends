@@ -5,6 +5,7 @@ const {
   ListAllApplications,
   UpdateApplicationStatus,
   ScheduleInterview,
+  UpdateApplicationData,
 } = require("../controller/newAdmissionController");
 
 const router = express.Router();
@@ -12,6 +13,7 @@ router.route("/listall").get(ListAllApplications);
 router.route("/apply").post(CreateNewApplication);
 router.route("/list").post(ListApplications);
 router.route("/update-application-status").post(UpdateApplicationStatus);
+router.route("/update-application-data").post(UpdateApplicationData);
 router.route("/scheduleinterview").post(ScheduleInterview);
 
 module.exports = router;
