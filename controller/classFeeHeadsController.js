@@ -34,16 +34,13 @@ module.exports.Get = async (req, res, next) => {
 
 module.exports.Add = async (req, res, next) => {
   try {
-    const { id, user, feehead_id, title, amount, frequency } = req.body;
+    const { id, user, feehead_id, title } = req.body;
     const updated_on = moment().format("DD/MM/YYYY");
     const updated_by = user || "";
-    const _frequency = frequency || "";
     const newItem = {
       id,
       feehead_id,
       title,
-      amount,
-      frequency: _frequency,
       updated_on,
       updated_by,
     };
@@ -76,15 +73,12 @@ module.exports.Add = async (req, res, next) => {
 
 module.exports.Update = async (req, res, next) => {
   try {
-    const { id, user, feehead_id, title, amount, frequency } = req.body;
+    const { id, user, feehead_id, title } = req.body;
     const updated_on = moment().format("DD/MM/YYYY");
     const updated_by = user || "";
-    const _frequency = frequency || "";
     const updatedItem = {
       feehead_id,
       title,
-      amount,
-      frequency: _frequency,
       updated_on,
       updated_by,
     };

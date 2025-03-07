@@ -1,15 +1,9 @@
 const express = require("express");
-const {
-  Add,
-  Update,
-  Get,
-  AddMultipleClass,
-} = require("../controller/classController");
+const { Add, Update, Get } = require("../controller/examScheduleController");
 const router = express.Router();
 
 router.route("/get").get(Get);
 router.route("/add").post(Add);
-router.route("/add-multiple").post(AddMultipleClass);
 router.route("/update").post(Update);
 
 module.exports = router;

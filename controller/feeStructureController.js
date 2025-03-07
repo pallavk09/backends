@@ -3,6 +3,7 @@ const {
   ListAllDocument,
   AddMultipleDocuments,
   UpdateMultipleDocuments,
+  DeleteAllDocument,
 } = require("../helper/appWrite");
 
 module.exports.GetTransportFeeStructure = async (req, res, next) => {
@@ -67,27 +68,57 @@ module.exports.AddTransportFeeStructure = async (req, res, next) => {
 
 module.exports.UpdateTransportFeeStructure = async (req, res, next) => {
   try {
+    const itemList = await ListAllDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_TRANSPORT_FEE_STRUCTURE
+    );
+    if (itemList && itemList.documents.length > 0) {
+      await DeleteAllDocument(
+        process.env.APPWRITE_DB_ID,
+        process.env.APPWRITE_TRANSPORT_FEE_STRUCTURE
+      );
+    }
+
     const { user, arrayOfItems } = req.body;
     const updated_on = moment().format("DD/MM/YYYY");
     const updated_by = user || "";
 
-    const updatedItems = await UpdateMultipleDocuments(
+    const newItems = await AddMultipleDocuments(
       arrayOfItems,
       updated_on,
       updated_by,
       process.env.APPWRITE_DB_ID,
       process.env.APPWRITE_TRANSPORT_FEE_STRUCTURE
     );
-    if (updatedItems) {
+    if (newItems) {
       return res.status(200).json({
         status: "SUCCESS",
-        message: `Updated ${updatedItems.length} documents`,
+        message: `Added ${newItems.length} documents`,
+        // result: newSubject,
       });
     } else {
       return res
         .status(500)
-        .json({ status: "FAIL", message: "Entry not updated" });
+        .json({ status: "FAIL", message: "Entry not added" });
     }
+
+    // // const updatedItems = await UpdateMultipleDocuments(
+    // //   arrayOfItems,
+    // //   updated_on,
+    // //   updated_by,
+    // //   process.env.APPWRITE_DB_ID,
+    // //   process.env.APPWRITE_TRANSPORT_FEE_STRUCTURE
+    // // );
+    // // if (updatedItems) {
+    // //   return res.status(200).json({
+    // //     status: "SUCCESS",
+    // //     message: `Updated ${updatedItems.length} documents`,
+    // //   });
+    // // } else {
+    // //   return res
+    // //     .status(500)
+    // //     .json({ status: "FAIL", message: "Entry not updated" });
+    // // }
   } catch (error) {
     const err = new Error(`Exception: ${error.message}`);
     err.status = "FAIL";

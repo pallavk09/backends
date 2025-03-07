@@ -18,6 +18,7 @@ const vehicleRouter = require("./routes/vehicleRoutes");
 const feeHeadsRouter = require("./routes/feeHeadsRoutes");
 const examRouter = require("./routes/examRoutes");
 const feeStructureRouter = require("./routes/feeStructureRoutes");
+const examScheduleRouter = require("./routes/examScheduleRoutes");
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use("/api/v1/stop", stopRouter);
 app.use("/api/v1/vehicle", vehicleRouter);
 app.use("/api/v1/feeheads", feeHeadsRouter);
 app.use("/api/v1/exam", examRouter);
+app.use("/api/v1/examschedule", examScheduleRouter);
 app.use("/api/v1/feestructure", feeStructureRouter);
 
 //Mouting Routers

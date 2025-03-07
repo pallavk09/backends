@@ -157,7 +157,7 @@ module.exports.AddSubjectsToClass = async (req, res, next) => {
       return res.status(200).json({
         status: "SUCCESS",
         message: `Added ${newItems.length} documents`,
-        // result: newSubject,
+        result: newItems,
       });
     } else {
       return res

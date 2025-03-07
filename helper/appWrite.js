@@ -450,6 +450,36 @@ module.exports.ListAllDocument = async (db_id, collection_id, query) => {
   }
 };
 
+module.exports.DeleteAllDocument = async (db_id, collection_id) => {
+  try {
+    let response = await database.listDocuments(db_id, collection_id);
+
+    const createDeletionPromise = response.documents.map((item) =>
+      database.deleteDocument(db_id, collection_id, item.$id)
+    );
+    const deletedDocuments = await Promise.all(createDeletionPromise);
+
+    // for (const document of response.documents) {
+    //   try {
+    //     await database.deleteDocument(db_id, collection_id, document.$id);
+    //   } catch (error) {
+    //     console.error(`Error deleting document ${document.$id}:`, error);
+    //   }
+    // }
+
+    let documentsPostDeletion = await database.listDocuments(
+      db_id,
+      collection_id
+    );
+
+    return ParseStringify(documentsPostDeletion);
+  } catch (error) {
+    throw new Error(
+      `Error while listing all document. DB: ${db_id}. Collection: ${collection_id}. Error: ${error.message}. Stack: ${error.stack}`
+    );
+  }
+};
+
 const AddFileToStorage = async (bucket_id, file) => {
   try {
     const Id = ID.unique();
@@ -480,8 +510,7 @@ module.exports.UpdateDocument = async (
       document_id,
       updateObj
     );
-    console.log("Document updated successfully");
-    console.log(updatedDocument);
+
     return updatedDocument;
   } catch (error) {
     throw new Error(
