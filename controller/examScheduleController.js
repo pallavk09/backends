@@ -4,12 +4,42 @@ const {
   UpdateDocument,
   ListAllDocument,
 } = require("../helper/appWrite");
+const { Query } = require("node-appwrite");
 
 module.exports.Get = async (req, res, next) => {
   try {
     const itemList = await ListAllDocument(
       process.env.APPWRITE_DB_ID,
       process.env.APPWRITE_EXAM_SCHEDULE
+    );
+    if (itemList) {
+      return res.status(200).json({
+        status: "SUCCESS",
+        result: itemList,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ status: "FAIL", message: "Unable to fetch" });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Exception. Unable to fetch. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
+module.exports.GetScheduleForClass = async (req, res, next) => {
+  try {
+    const { class_id } = req.body;
+    const itemList = await ListAllDocument(
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_EXAM_SCHEDULE,
+      [Query.equal("class_id", [class_id])]
     );
     if (itemList) {
       return res.status(200).json({

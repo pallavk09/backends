@@ -5,8 +5,8 @@ const mailgun = new Mailgun(formData);
 module.exports.SendEmail = async (req, res, next) => {
   try {
     const mg = mailgun.client({
-      username: "api",
-      key: "7de2b94abdb00353024c257fb9f34694-d8df908e-82a9996b",
+      username: "",
+      key: "",
     });
 
     let msg = await mg.messages.create("sandbox-123.mailgun.org", {

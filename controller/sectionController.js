@@ -3,6 +3,7 @@ const {
   AddNewDocument,
   UpdateDocument,
   ListAllDocument,
+  AddMultipleDocuments,
 } = require("../helper/appWrite");
 
 module.exports.Get = async (req, res, next) => {
@@ -102,6 +103,39 @@ module.exports.Update = async (req, res, next) => {
     }
   } catch (error) {
     const err = new Error(`Exception. Entry not updated: ${error.message}`);
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
+module.exports.AddMultipleSections = async (req, res, next) => {
+  try {
+    const { user, arrayOfItems } = req.body;
+    const updated_on = moment().format("DD/MM/YYYY");
+    const updated_by = user || "";
+
+    const newItems = await AddMultipleDocuments(
+      arrayOfItems,
+      updated_on,
+      updated_by,
+      process.env.APPWRITE_DB_ID,
+      process.env.APPWRITE_SECTION_COLLECTION
+    );
+    if (newItems) {
+      return res.status(200).json({
+        status: "SUCCESS",
+        message: `Added ${newItems.length} documents`,
+        result: newItems,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ status: "FAIL", message: "Entry not added" });
+    }
+  } catch (error) {
+    const err = new Error(`Exception: ${error.message}`);
     err.status = "FAIL";
     err.statusCode = 500;
 

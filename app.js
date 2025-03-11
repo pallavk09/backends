@@ -5,10 +5,9 @@ const morgan = require("morgan");
 const cors = require("cors");
 
 const authRouter = require("./routes/authRoutes");
-const studentRouter = require("./routes/studentRoutes");
-const feeRouter = require("./routes/feeRoutes");
-const newAdmissionRouter = require("./routes/newAdmissionRoutes");
-const emailRouter = require("./routes/emailRoutes");
+// const feeRouter = require("./routes/feeRoutes");
+// const newAdmissionRouter = require("./routes/newAdmissionRoutes");
+// const emailRouter = require("./routes/emailRoutes");
 
 const classRouter = require("./routes/classRoutes");
 const sectionRouter = require("./routes/sectionsRoutes");
@@ -19,6 +18,7 @@ const feeHeadsRouter = require("./routes/feeHeadsRoutes");
 const examRouter = require("./routes/examRoutes");
 const feeStructureRouter = require("./routes/feeStructureRoutes");
 const examScheduleRouter = require("./routes/examScheduleRoutes");
+const studentRouter = require("./routes/studentRoutes");
 
 const app = express();
 
@@ -57,6 +57,7 @@ app.use("/api/v1/feeheads", feeHeadsRouter);
 app.use("/api/v1/exam", examRouter);
 app.use("/api/v1/examschedule", examScheduleRouter);
 app.use("/api/v1/feestructure", feeStructureRouter);
+app.use("/api/v1/student", studentRouter);
 
 //Mouting Routers
 // app.use("/api/v1/auth", authRouter);
