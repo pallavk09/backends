@@ -15,6 +15,8 @@ const {
   GetFeeStatusSummary,
   GetPendingFeeParticulars,
   UpdateFeePayment,
+  GetFeeCollectionReport,
+  GetFeeCollectionRecords,
 } = require("../controller/studentController");
 
 const router = express.Router();
@@ -25,6 +27,8 @@ router.route("/get-stop-student-count").get(GetStopWiseStudentCount);
 router.route("/get-fee-summary").get(GetFeeStatusSummary);
 router.route("/get-pending-fee-particulars").post(GetPendingFeeParticulars);
 router.route("/update-fees-payment").post(UpdateFeePayment);
+router.route("/fee-collection-report").get(GetFeeCollectionReport);
+router.route("/fee-collection-records").post(GetFeeCollectionRecords);
 
 router.route("/addstudent").post(AddStudent);
 router.route("/updatestudent").post(UpdateStudent);

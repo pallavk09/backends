@@ -1,14 +1,10 @@
 require("dotenv").config({ path: `.env.local`, override: true });
 const express = require("express");
-const morgan = require("morgan");
+// const morgan = require("morgan");
 // const logger = require("./logger/logger");
 const cors = require("cors");
 
 const authRouter = require("./routes/authRoutes");
-// const feeRouter = require("./routes/feeRoutes");
-// const newAdmissionRouter = require("./routes/newAdmissionRoutes");
-// const emailRouter = require("./routes/emailRoutes");
-
 const classRouter = require("./routes/classRoutes");
 const sectionRouter = require("./routes/sectionsRoutes");
 const subjectRouter = require("./routes/subjectRoutes");
@@ -19,6 +15,8 @@ const examRouter = require("./routes/examRoutes");
 const feeStructureRouter = require("./routes/feeStructureRoutes");
 const examScheduleRouter = require("./routes/examScheduleRoutes");
 const studentRouter = require("./routes/studentRoutes");
+const teacherRouter = require("./routes/teachersRoutes");
+const { verifyToken } = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -48,6 +46,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => res.send("Connection success"));
+
+app.use("/api/v1/auth", authRouter);
+app.use(verifyToken);
+
 app.use("/api/v1/class", classRouter);
 app.use("/api/v1/section", sectionRouter);
 app.use("/api/v1/subject", subjectRouter);
@@ -58,13 +60,7 @@ app.use("/api/v1/exam", examRouter);
 app.use("/api/v1/examschedule", examScheduleRouter);
 app.use("/api/v1/feestructure", feeStructureRouter);
 app.use("/api/v1/student", studentRouter);
-
-//Mouting Routers
-// app.use("/api/v1/auth", authRouter);
-// app.use("/api/v1/student", studentRouter);
-// app.use("/api/v1/fees", feeRouter);
-// app.use("/api/v1/newadmission", newAdmissionRouter);
-// app.use("/api/v1/email", emailRouter);
+app.use("/api/v1/teacher", teacherRouter);
 
 //Handling unhandled routes
 app.all("*", (req, res, next) => {

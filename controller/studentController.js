@@ -608,14 +608,32 @@ module.exports.GetFeeStatusSummary = async (req, res, next) => {
       if (response.documents.length < limit) break;
       offset += limit;
     }
-    console.log("************ allFees *********************");
-    console.log(allFees);
 
+    //CHECKING IF ANY FEE HEADSS ARE PENDING THROUGH PREVIOUS MONTHS
     const hasPendingFees = allFees.some((student) => {
       const monthlyPayments = JSON.parse(student.monthly_payments);
-      return monthlyPayments.some(
-        (payment) => Object.keys(payment.pending_fees).length > 0
-      );
+      const paymentsByMonth = {};
+
+      // Group payments by month
+      monthlyPayments.forEach((payment) => {
+        const key = `${payment.month}-${payment.year}`;
+        if (!paymentsByMonth[key]) {
+          paymentsByMonth[key] = [];
+        }
+        paymentsByMonth[key].push(payment);
+      });
+
+      // Check if any month's last payment still has pending fees
+      return Object.values(paymentsByMonth).some((payments) => {
+        // Sort payments by payment_date to get the latest one
+        payments.sort(
+          (a, b) => new Date(a.payment_date) - new Date(b.payment_date)
+        );
+        const latestPayment = payments[payments.length - 1];
+
+        // If the latest payment still has pending fees, return true
+        return Object.keys(latestPayment.pending_fees).length > 0;
+      });
     });
 
     console.log("************ hasPendingFees *********************");
@@ -713,7 +731,9 @@ module.exports.GetPendingFeeParticulars = async (req, res, next) => {
     let student_fee_collection_records = [];
     let student_transport_collection = [];
     let offset = 0;
-    const limit = 25; // AppWrite limit per request
+    const limit = 25;
+    const previous_pending_heads = [];
+    const paymentsByMonth = {};
 
     // Fetch all student class fee records
     offset = 0;
@@ -735,8 +755,6 @@ module.exports.GetPendingFeeParticulars = async (req, res, next) => {
       offset += limit;
     }
 
-    const previous_pending_heads = [];
-
     const hasRecord =
       student_fee_collection_records &&
       student_fee_collection_records.length > 0;
@@ -745,55 +763,68 @@ module.exports.GetPendingFeeParticulars = async (req, res, next) => {
       const monthly_payments_str =
         student_fee_collection_records[0].monthly_payments;
       const monthly_payments_JSON = JSON.parse(monthly_payments_str);
-      console.log(monthly_payments_JSON);
 
-      monthly_payments_JSON.forEach(
-        ({ month, year, selected_fees, pending_fees }) => {
-          if (Object.keys(pending_fees).length > 0) {
-            // Ignore months with empty pending_fees
-            const schoolFees = { ...pending_fees };
-            const transportFees = {};
-
-            // Separate transport fee
-            if (selected_fees.transport) {
-              transportFees.transport = selected_fees.transport;
-              delete selected_fees.transport;
-            }
-
-            const totalSchoolFees = Object.values(schoolFees).reduce(
-              (sum, val) => sum + val,
-              0
-            );
-            const totalTransportFees = Object.values(transportFees).reduce(
-              (sum, val) => sum + val,
-              0
-            );
-
-            previous_pending_heads.push({
-              month,
-              year,
-              school_fee: {
-                month,
-                fees_particulars: schoolFees,
-                total_fees: totalSchoolFees,
-                year,
-              },
-              transport_fee: {
-                month,
-                fees_particulars: transportFees,
-                total_fees: totalTransportFees,
-                year,
-              },
-            });
-          }
+      monthly_payments_JSON.forEach((payment) => {
+        const key = `${payment.month}-${payment.year}`;
+        if (!paymentsByMonth[key]) {
+          paymentsByMonth[key] = [];
         }
-      );
-    }
+        paymentsByMonth[key].push(payment);
+      });
 
-    // console.log(
-    //   "************* previous_pending_heads ****************************"
-    // );
-    // console.log(previous_pending_heads);
+      console.log("****** paymentsByMonth *******");
+      console.log(paymentsByMonth);
+
+      Object.values(paymentsByMonth).forEach((payments) => {
+        // Sort payments by date to get the latest one
+        payments.sort(
+          (a, b) => new Date(a.payment_date) - new Date(b.payment_date)
+        );
+        const latestPayment = payments[payments.length - 1];
+
+        // Only add to pending heads if pending_fees is not empty
+        if (Object.keys(latestPayment.pending_fees).length > 0) {
+          const { month, year, pending_fees } = latestPayment;
+          const schoolFees = { ...pending_fees };
+          const transportFees = {};
+
+          // If transport fee is in pending_fees, move it to transportFees
+          if (schoolFees.transport) {
+            transportFees.transport = schoolFees.transport;
+            delete schoolFees.transport;
+          }
+
+          const totalSchoolFees = Object.values(schoolFees).reduce(
+            (sum, val) => sum + val,
+            0
+          );
+          const totalTransportFees = Object.values(transportFees).reduce(
+            (sum, val) => sum + val,
+            0
+          );
+
+          previous_pending_heads.push({
+            month,
+            year,
+            school_fee: {
+              month,
+              fees_particulars: schoolFees,
+              total_fees: totalSchoolFees,
+              year,
+            },
+            transport_fee: {
+              month,
+              fees_particulars: transportFees,
+              total_fees: totalTransportFees,
+              year,
+            },
+          });
+        }
+      });
+
+      console.log("****** previous_pending_heads *******");
+      console.log(previous_pending_heads);
+    }
 
     const studentObj = await ListAllDocument(
       process.env.APPWRITE_DB_ID,
@@ -912,21 +943,13 @@ module.exports.GetPendingFeeParticulars = async (req, res, next) => {
 
 module.exports.UpdateFeePayment = async (req, res, next) => {
   try {
-    const {
-      student_id,
-      payment_records_schoolFee,
-      // payment_records_transportFee,
-      user,
-    } = req.body;
+    const { student_id, payment_records_schoolFee, user } = req.body;
     let student_fee_collection_records = [];
-    // let student_transport_collection = [];
     let offset = 0;
     const limit = 25; // AppWrite limit per request
     const todayDate = moment().format("DD/MM/YYYY");
     const updated_on = moment().format("DD/MM/YYYY");
     const updated_by = user || "";
-    // let schoolFeeUpdated = false;
-    // let transportFeeUpdated = false;
 
     const studentObj = await ListAllDocument(
       process.env.APPWRITE_DB_ID,
@@ -935,11 +958,10 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
     );
 
     const _student_id = studentObj.documents[0].student_id;
-    const _class_id = studentObj.documents[0].class_id;
     const _class_name = studentObj.documents[0].class_name;
-    const _stop_name = JSON.parse(
-      studentObj.documents[0].transport_details
-    ).stop_name;
+    // const _stop_name = JSON.parse(
+    //   studentObj.documents[0].transport_details
+    // ).stop_name;
 
     if (payment_records_schoolFee && payment_records_schoolFee.length > 0) {
       // Fetch all student class fee records
@@ -989,11 +1011,11 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
         student_fee_collection_records &&
         student_fee_collection_records.length > 0
       ) {
-        console.log(
-          "******* School Fee Record present. Need to update *******"
-        );
+        // console.log("***** School Fee Record present. Need to update ****");
+        // console.log(student_fee_collection_records);
+
         const previous_monthly_payments_str =
-          student_fee_collection_records.result.monthly_payments;
+          student_fee_collection_records[0].monthly_payments;
         const previous_monthly_payments_json = JSON.parse(
           previous_monthly_payments_str
         );
@@ -1001,7 +1023,10 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
           ...previous_monthly_payments_json,
           ...payment_records_schoolFee,
         ];
-        const id = student_fee_collection_records.result.student_fees_id;
+        console.log("******* updated_monthly_payments *******");
+        console.log(updated_monthly_payments);
+
+        const id = student_fee_collection_records[0].student_fees_id;
         const updated_record = {
           // ...student_fee_collection_records.result,
           fees_structure_id: defaultFeeStructure?.fees_structure_id || null,
@@ -1022,6 +1047,7 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
           return res.status(200).json({
             status: "SUCCESS",
             message: "Entry updated",
+            result: updated_class_fee_record,
           });
         } else {
           return res
@@ -1072,6 +1098,7 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
         return res.status(500).json({
           status: "FAIL",
           message: "student_fee_collection_records is Null",
+          result: null,
         });
       }
     }
@@ -1224,6 +1251,146 @@ module.exports.UpdateFeePayment = async (req, res, next) => {
     // }
   } catch (error) {
     const err = new Error(`Exception: ${error.message}`);
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
+module.exports.GetFeeCollectionReport = async (req, res, next) => {
+  try {
+    let student_fee_collection_records = [];
+
+    const feeCollection = {};
+    let offset = 0;
+    const limit = 25;
+
+    // Fetch all student class fee records
+    offset = 0;
+    while (true) {
+      const response = await ListAllDocument(
+        process.env.APPWRITE_DB_ID,
+        process.env.APPWRITE_FEE_COLLECTION_RECORDS,
+        [Query.limit(limit), Query.offset(offset)]
+      );
+
+      student_fee_collection_records = student_fee_collection_records.concat(
+        response.documents
+      );
+      if (response.documents.length < limit) break;
+      offset += limit;
+    }
+
+    let student_monthly_payments = [];
+    student_fee_collection_records.forEach((record) => {
+      const monthly_payment_str = record.monthly_payments;
+      const monthly_payment_json = JSON.parse(monthly_payment_str);
+
+      console.log("monthly_payment_json", monthly_payment_json);
+
+      student_monthly_payments = [
+        ...student_monthly_payments,
+        ...(Array.isArray(monthly_payment_json) &&
+        monthly_payment_json.length > 0
+          ? monthly_payment_json
+          : []),
+      ];
+    });
+
+    student_monthly_payments.forEach((payment) => {
+      const key = `${payment.month}-${payment.year}`;
+
+      if (!feeCollection[key]) {
+        feeCollection[key] = {
+          total_collection: 0,
+          transport_collection: 0,
+          class_fee_collection: 0,
+          rebate_amount: 0,
+        };
+      }
+
+      let transportAmount = payment.selected_fees["transport"] || 0;
+      let classFeeAmount = Object.entries(payment.selected_fees)
+        .filter(([key]) => key.toLowerCase() !== "transport")
+        .reduce((sum, [, value]) => sum + value, 0);
+
+      // Get rebate amount
+      let rebateAmount = payment.rebate_amount || 0;
+
+      // Reduce rebate from class fee collection
+      let adjustedClassFee = Math.max(0, classFeeAmount - rebateAmount);
+
+      // Total collection remains sum of class_fee_collection and transport_collection
+      let totalAmount = adjustedClassFee + transportAmount;
+
+      feeCollection[key].total_collection += totalAmount;
+      feeCollection[key].transport_collection += transportAmount;
+      feeCollection[key].class_fee_collection += adjustedClassFee;
+      feeCollection[key].rebate_amount += rebateAmount;
+    });
+
+    if (feeCollection) {
+      return res.status(200).json({
+        status: "SUCCESS",
+        result: feeCollection,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ status: "FAIL", message: "Unable to fetch" });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Exception. Unable to fetch. Error: ${error.message}`
+    );
+    err.status = "FAIL";
+    err.statusCode = 500;
+
+    next(err);
+  }
+};
+
+module.exports.GetFeeCollectionRecords = async (req, res, next) => {
+  try {
+    const { student_id } = req.body;
+    let student_fee_collection_records = [];
+    let offset = 0;
+    const limit = 25;
+
+    offset = 0;
+    while (true) {
+      const response = await ListAllDocument(
+        process.env.APPWRITE_DB_ID,
+        process.env.APPWRITE_FEE_COLLECTION_RECORDS,
+        [
+          Query.equal("student_id", [student_id]),
+          Query.limit(limit),
+          Query.offset(offset),
+        ]
+      );
+
+      student_fee_collection_records = student_fee_collection_records.concat(
+        response.documents
+      );
+      if (response.documents.length < limit) break;
+      offset += limit;
+    }
+
+    if (student_fee_collection_records) {
+      return res.status(200).json({
+        status: "SUCCESS",
+        result: student_fee_collection_records,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ status: "FAIL", message: "Unable to fetch" });
+    }
+  } catch (error) {
+    const err = new Error(
+      `Exception. Unable to fetch. Error: ${error.message}`
+    );
     err.status = "FAIL";
     err.statusCode = 500;
 
